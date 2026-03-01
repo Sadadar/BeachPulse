@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeachPulse Admin — Player Identity</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f0e8; color: #1a1a1a; }
+    header { background: #3A7CA5; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 13px; opacity: 0.8; }
+    nav { background: white; border-bottom: 1px solid #e0d8cc; display: flex; gap: 0; }
+    nav button { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: #555; border-bottom: 2px solid transparent; }
+    nav button.active { color: #3A7CA5; border-bottom-color: #3A7CA5; font-weight: 500; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #333; }
+    .card { background: white; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .player-name { font-weight: 600; font-size: 15px; }
+    .confidence-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; }
+    .confidence-LOW { background: #fde8e8; color: #c0392b; }
+    .confidence-MEDIUM { background: #fef3cd; color: #856404; }
+    .confidence-HIGH { background: #d4edda; color: #155724; }
+    .sources { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .source-chip { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #eee; }
+    .source-chip a { color: #3A7CA5; text-decoration: none; }
+    .source-chip a:hover { text-decoration: underline; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    button.btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; }
+    button.btn-primary { background: #3A7CA5; color: white; }
+    button.btn-secondary { background: #e8e0d4; color: #333; }
+    button.btn-danger { background: #fde8e8; color: #c0392b; }
+    button.btn:hover { opacity: 0.85; }
+    input, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d0c8bc; border-radius: 6px; font-size: 14px; margin-top: 4px; }
+    label { font-size: 13px; font-weight: 500; color: #555; display: block; margin-top: 12px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row > div { flex: 1; }
+    .empty-state { text-align: center; padding: 48px 24px; color: #888; }
+    .count-badge { background: #3A7CA5; color: white; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+    .aliases-list { font-size: 13px; color: #666; margin-top: 6px; }
+    .flag-time { font-size: 11px; color: #999; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>BeachPulse Admin</h1>
+  <span>Player Identity Disambiguation</span>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('review')">Review Queue <span id="review-count" class="count-badge">…</span></button>
+  <button onclick="showTab('aliases')">Aliases <span id="alias-count" class="count-badge">…</span></button>
+  <button onclick="showTab('merge')">Merge / Split</button>
+</nav>
+
+<div class="container">
+
+  <!-- Review Queue -->
+  <div id="tab-review" class="section active">
+    <h2>Players needing human review</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;">These players were matched by name only — no Volleyball World ID or known partner confirmed. Click source links to verify, then merge or dismiss.</p>
+    <div id="review-list"></div>
+  </div>
+
+  <!-- Aliases -->
+  <div id="tab-aliases" class="section">
+    <h2>Current aliases</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;">Confirmed identity mappings stored in playerAliases.json.</p>
+    <div id="aliases-list"></div>
+  </div>
+
+  <!-- Merge / Split form -->
+  <div id="tab-merge" class="section">
+    <div class="card">
+      <h2 style="margin-bottom:4px">Merge: confirm two profiles are the same player</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:16px;">Creates or extends an alias entry so these normalized names always resolve to the same canonical ID.</p>
+      <label>Canonical ID (use Volleyball World ID if known, e.g. <em>vw-sarah-hughes-12345</em>)</label>
+      <input id="merge-canonical" type="text" placeholder="vw-player-id">
+      <label>Aliases — one normalized name per line (lowercase, no punctuation)</label>
+      <textarea id="merge-aliases" rows="3" placeholder="sarah hughes&#10;sara hughes"></textarea>
+      <label>Note (optional)</label>
+      <input id="merge-note" type="text" placeholder="USA women's beach volleyball player">
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-primary" onclick="doMerge()">Save merge</button>
+      </div>
+      <div id="merge-result" style="margin-top:10px;font-size:13px;color:#3A7CA5"></div>
+    </div>
+
+    <div class="card" style="margin-top:24px">
+      <h2 style="margin-bottom:4px">Split: confirm two names are different players</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:16px;">Adds separate alias entries to prevent these names from ever being merged (e.g. Megan Rice vs Megan J. Rice).</p>
+      <div class="form-row">
+        <div>
+          <label>Name A (normalized)</label>
+          <input id="split-a" type="text" placeholder="megan rice">
+          <label>Note for A</label>
+          <input id="split-note-a" type="text" placeholder="Distinct from Megan J. Rice">
+        </div>
+        <div>
+          <label>Name B (normalized)</label>
+          <input id="split-b" type="text" placeholder="megan j rice">
+          <label>Note for B</label>
+          <input id="split-note-b" type="text" placeholder="Distinct from Megan Rice">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-danger" onclick="doSplit()">Save split</button>
+      </div>
+      <div id="split-result" style="margin-top:10px;font-size:13px;color:#3A7CA5"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  async function loadReview() {
+    const res = await fetch('/admin/api/review');
+    const entries = await res.json();
+    document.getElementById('review-count').textContent = entries.length;
+    const el = document.getElementById('review-list');
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="empty-state">No players in review queue — all matches look good.</div>';
+      return;
+    }
+    el.innerHTML = entries.map(e => `
+      <div class="card" id="review-${e.canonicalId.replace(/[^a-z0-9]/g, '-')}">
+        <div class="card-header">
+          <div>
+            <span class="player-name">${e.name}</span>
+            <span style="font-size:12px;color:#999;margin-left:8px">${e.normalizedName}</span>
+          </div>
+          <span class="confidence-badge confidence-${e.confidence}">${e.confidence}</span>
+        </div>
+        <div class="flag-time">Flagged ${new Date(e.flaggedAt).toLocaleString()}</div>
+        <div class="sources">
+          ${e.sources.map(s => `
+            <span class="source-chip">
+              ${s.profileUrl
+                ? `<a href="${s.profileUrl}" target="_blank">${s.source}</a>`
+                : s.source}
+            </span>
+          `).join('')}
+        </div>
+        <div style="font-size:12px;color:#888;margin-top:4px">${e.reason}</div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="prefillMerge('${e.canonicalId}', '${e.normalizedName}')">Merge →</button>
+          <button class="btn btn-danger" onclick="prefillSplit('${e.normalizedName}')">Split →</button>
+          <button class="btn btn-secondary" onclick="dismiss('${e.canonicalId}')">Dismiss</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadAliases() {
+    const res = await fetch('/admin/api/aliases');
+    const data = await res.json();
+    document.getElementById('alias-count').textContent = data.aliases.length;
+    const el = document.getElementById('aliases-list');
+    if (!data.aliases.length) {
+      el.innerHTML = '<div class="empty-state">No aliases defined yet.</div>';
+      return;
+    }
+    el.innerHTML = data.aliases.map(a => `
+      <div class="card">
+        <div class="card-header">
+          <span class="player-name">${a.canonicalId}</span>
+        </div>
+        <div class="aliases-list">Aliases: ${a.aliases.join(', ')}</div>
+        ${a.note ? `<div style="font-size:12px;color:#888;margin-top:4px">${a.note}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function prefillMerge(canonicalId, normalizedName) {
+    showTab('merge');
+    document.querySelectorAll('nav button')[2].classList.add('active');
+    document.querySelectorAll('nav button')[0].classList.remove('active');
+    document.getElementById('merge-canonical').value = canonicalId;
+    document.getElementById('merge-aliases').value = normalizedName;
+  }
+
+  function prefillSplit(normalizedName) {
+    showTab('merge');
+    document.querySelectorAll('nav button')[2].classList.add('active');
+    document.querySelectorAll('nav button')[0].classList.remove('active');
+    document.getElementById('split-a').value = normalizedName;
+  }
+
+  async function dismiss(canonicalId) {
+    await fetch('/admin/api/review/' + encodeURIComponent(canonicalId), { method: 'DELETE' });
+    loadReview();
+  }
+
+  async function doMerge() {
+    const canonicalId = document.getElementById('merge-canonical').value.trim();
+    const aliases = document.getElementById('merge-aliases').value.split('\n').map(s => s.trim()).filter(Boolean);
+    const note = document.getElementById('merge-note').value.trim();
+    if (!canonicalId || aliases.length === 0) {
+      document.getElementById('merge-result').textContent = 'Canonical ID and at least one alias are required.';
+      return;
+    }
+    const res = await fetch('/admin/api/aliases/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ canonicalId, aliases, note }),
+    });
+    const data = await res.json();
+    document.getElementById('merge-result').textContent = data.ok ? 'Saved.' : 'Error: ' + data.error;
+    if (data.ok) { loadAliases(); loadReview(); }
+  }
+
+  async function doSplit() {
+    const nameA = document.getElementById('split-a').value.trim();
+    const nameB = document.getElementById('split-b').value.trim();
+    const noteA = document.getElementById('split-note-a').value.trim();
+    const noteB = document.getElementById('split-note-b').value.trim();
+    if (!nameA || !nameB) {
+      document.getElementById('split-result').textContent = 'Both names are required.';
+      return;
+    }
+    const res = await fetch('/admin/api/aliases/split', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nameA, nameB, noteA, noteB }),
+    });
+    const data = await res.json();
+    document.getElementById('split-result').textContent = data.ok ? 'Saved.' : 'Error: ' + data.error;
+    if (data.ok) { loadAliases(); }
+  }
+
+  // Load on start
+  loadReview();
+  loadAliases();
+</script>
+</body>
+</html>

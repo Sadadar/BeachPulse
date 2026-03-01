@@ -8,13 +8,32 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:live": "jest --config jest.integration.config.js"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/__tests__/integration/"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ]
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@apollo/server": "^5.4.0",
+    "@as-integrations/express5": "^1.1.2",
     "axios": "^1.9.0",
     "cheerio": "^1.1.0",
     "cors": "^2.8.5",
@@ -22,22 +41,31 @@
     "csv-stringify": "^6.5.2",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "graphql": "^16.13.0",
     "helmet": "^8.1.0",
+    "ical-generator": "^10.0.0",
+    "luxon": "^3.7.2",
     "morgan": "^1.10.0",
+    "node-cron": "^4.2.1",
     "puppeteer": "^24.10.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/luxon": "^3.7.1",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.0.0",
+    "@types/node-cron": "^3.0.11",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "concurrently": "^9.1.2",
     "eslint": "^9.28.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.10",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

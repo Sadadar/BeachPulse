@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(cd backend && *)",
+      "Bash(cd backend*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Edit(backend/**)",
+      "Edit(ios/**)",
+      "Edit(.claude/**)",
+      "Write(backend/**)",
+      "Write(ios/**)",
+      "Write(.claude/**)",
+      "WebFetch(domain:avp.volleyballlife.com)",
+      "WebFetch(domain:volleyballworld.com)",
+      "WebFetch(domain:www.volleyballworld.com)",
+      "WebFetch(domain:en.volleyballworld.com)",
+      "WebFetch(domain:truvolley.com)",
+      "WebFetch(domain:www.truvolley.com)",
+      "WebFetch(domain:fivb.12ndr.at)"
+    ]
+  }
+}
