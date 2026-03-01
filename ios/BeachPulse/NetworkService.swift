@@ -1,12 +1,32 @@
 import Foundation
 
+struct PlayerRanking: Codable, Identifiable {
+    let rank: Int
+    let name: String
+    let points: Double
+    var id: String { name }
+}
+
+struct RankingsResponse: Codable {
+    let men: [PlayerRanking]
+    let women: [PlayerRanking]
+}
+
 class NetworkService: ObservableObject {
     private let baseURL = "http://localhost:3000/api"
-    
+
     struct CounterResponse: Codable {
         let id: String
         let count: Int
         let lastUpdated: String
+    }
+
+    func fetchRankings() async throws -> RankingsResponse {
+        guard let url = URL(string: "\(baseURL)/rankings") else {
+            throw URLError(.badURL)
+        }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode(RankingsResponse.self, from: data)
     }
     
     func fetchCounter() async throws -> CounterResponse {

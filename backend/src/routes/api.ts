@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { AVPRankingsService } from '../services/avpRankings';
+
+const avpRankingsService = new AVPRankingsService();
 
 export const apiRouter = Router();
 
@@ -33,5 +36,27 @@ apiRouter.post('/counter/reset', (req, res) => {
   counterData.count = 0;
   counterData.lastUpdated = new Date();
   res.json(counterData);
+});
+
+// Get current rankings (from cache if available)
+apiRouter.get('/rankings', async (req, res) => {
+  try {
+    const rankings = await avpRankingsService.getRankings();
+    res.json(rankings);
+  } catch (error) {
+    console.error('Error fetching rankings:', error);
+    res.status(500).json({ error: 'Failed to fetch AVP rankings' });
+  }
+});
+
+// Force refresh rankings
+apiRouter.post('/rankings/refresh', async (req, res) => {
+  try {
+    const rankings = await avpRankingsService.fetchAndUpdateRankings();
+    res.json(rankings);
+  } catch (error) {
+    console.error('Error refreshing rankings:', error);
+    res.status(500).json({ error: 'Failed to refresh AVP rankings' });
+  }
 });
 
